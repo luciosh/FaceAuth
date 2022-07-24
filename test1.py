@@ -2,7 +2,7 @@
 import cv2
 
 webcam = cv2.VideoCapture(0)
-face_cascade = cv2.CascadeClassifier("face-cascade.xml")
+face_cascade = cv2.CascadeClassifier("cascade.xml")
 
 center_coordinates = (120, 100)
 axesLength = (100, 50)
