@@ -33,8 +33,8 @@ while (True):
         window_name = 'Image'
 
     nose = nose_cascade.detectMultiScale(video,
-                                         minNeighbors=20,
-                                         minSize=(30, 30),
+                                         minNeighbors=10,
+                                         minSize=(10, 10),
                                          maxSize=(400, 400))
     for (x, y, w, h) in nose:
         # cv2.circle(video, (x, y), (x+w, y+h), (0, 255, 0), 4)
@@ -42,6 +42,7 @@ while (True):
         cv2.ellipse(video, (x+(int(w/2)), y+(int(h/2))), (round(w/2), round(h/2)), angle, startAngle, endAngle,
                     (0, 255, 0), 4)
         window_name = 'Image'
+
 
     cv2.imshow("Face Detection", video)
 
