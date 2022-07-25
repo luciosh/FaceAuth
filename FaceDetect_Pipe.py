@@ -1,6 +1,7 @@
 
 import cv2
 import mediapipe as mp
+
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_face_mesh = mp.solutions.face_mesh
@@ -8,6 +9,20 @@ testa = []
 queixo = []
 boca = []
 points = [10,15,200]
+center_coordinates = (320, 240)
+axesLength = (170, 140) 
+angle = 90
+startAngle = 0
+endAngle = 360
+thickness = 3
+limitY1 = 200
+limitY2 = 370
+limiarY1 = round(limitY1 * 0.5)
+limiarY2 = round(limitY2 * 0.5)
+limitX1 = 320
+limitX2 = 320
+limiarX1 = round(limitX1 * 0.2)
+limiarX2 = round(limitX2 * 0.2)
 
 def saveHistory(lms, obj, point):
     item = [round(lms.landmark[point].x*640), round(lms.landmark[point].y*480)]
@@ -18,6 +33,34 @@ def saveHistory(lms, obj, point):
         obj.append(item)
     # print(obj)
     return obj
+
+def verificaPosicao(lms, obj, point):
+    # Detecta se rosto esta dentro da elipse
+    if (lms.landmark[point[0]].y * 480 <= limitY1 + limiarY1 and lms.landmark[point[0]].y * 480 >= limitY1 - limiarY1):
+        if (lms.landmark[point[2]].y * 480 >= limitY2 - limiarY2 and lms.landmark[point[2]].y * 480 <= limitY2):
+            if (lms.landmark[point[0]].x * 640 <= limitX1 + limiarX1 and lms.landmark[point[0]].x * 640 >= limitX1 - limiarX1):
+                if (lms.landmark[point[2]].x * 640 <= limitX2 + limiarX2 and lms.landmark[point[2]].x * 640  >= limitX1 - limiarX1):
+                    return True
+                else:
+                    return False
+            else:
+                return False
+        else:
+            return False
+    else:
+        return False
+
+def drawEllipse(color):
+    cv2.ellipse(
+        image,
+        center_coordinates, 
+        axesLength,
+        angle, 
+        startAngle, 
+        endAngle, 
+        color, 
+        thickness
+    )
 
 def verificaMovimento(obj):
     movimento = [0,0,0,0]
@@ -45,14 +88,19 @@ def verificaMovimento(obj):
         if(max_value>(0.7*len(obj))):
             if(max_idx == 0):
                 print("Virou pra cima!")
+                return "Virou pra cima!"
             elif(max_idx == 1):
                 print("Virou pra baixo!")
+                return "Virou pra baixo!"
             elif(max_idx == 2):
                 print("Virou pra direita!")
+                return "Virou pra direita!"
             elif(max_idx == 3):
                 print("Virou pra esquerda!")
+                return "Virou pra esquerda!"
             else:
                 print("Indefinido!")
+                return "Indefinido!"
         # print(movimento)
 
 # For webcam input:
@@ -66,40 +114,39 @@ with mp_face_mesh.FaceMesh(
     success, image = cap.read()
     if not success:
       print("Ignoring empty camera frame.")
-      # If loading a video, use 'break' instead of 'continue'.
       continue
 
-    # To improve performance, optionally mark the image as not writeable to
-    # pass by reference.
     image.flags.writeable = False
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = face_mesh.process(image)
 
-    # Draw the face mesh annotations on the image.
     image.flags.writeable = True
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    image = cv2.flip(image, 1)
+    x, y, w, h = 10, 10, 300,60
     if results.multi_face_landmarks:
       for face_landmarks in results.multi_face_landmarks:
-        # mp_drawing.draw_landmarks(
-        #     image=image,
-        #     landmark_list=face_landmarks,
-        #     connections=mp_face_mesh.FACEMESH_CONTOURS,
-        #     landmark_drawing_spec=None,
-        #     connection_drawing_spec=mp_drawing_styles
-        #     .get_default_face_mesh_contours_style())
-        # print(len(face_landmarks))
-        # testa: 10
-        # boca 15
-        # Queixo 200
-        boca = saveHistory(face_landmarks, boca, points[1])
-        verificaMovimento(boca)
-        # print("X:" + str(round(face_landmarks.landmark[325].x*640)))
-        # print("Y:" + str(round(face_landmarks.landmark[325].y*480)))
-    # Flip the image horizontally for a selfie-view display.
-    cv2.imshow('MediaPipe Face Mesh', cv2.flip(image, 1))
+        if(verificaPosicao(face_landmarks, testa, points)):
+            boca = saveHistory(face_landmarks, boca, points[1])
+            cv2.rectangle(
+                image, 
+                (x, x), 
+                (x + w + 40, y + h - 10), 
+                (0,0,0), -1
+            )
+            cv2.putText(
+                image, 
+                verificaMovimento(boca), 
+                (x + int(w/10),y + int(h/1.5)), 
+                cv2.FONT_HERSHEY_SIMPLEX, 
+                1, 
+                (0, 255, 0)
+            )
+            drawEllipse((0,255,0))
+        else:
+            drawEllipse((0,0,255))
+
+    cv2.imshow('MediaPipe Face Mesh', image)
     if cv2.waitKey(5) & 0xFF == 27:
       break
-cap.release()
-
-    
-    
+cap.release() 
