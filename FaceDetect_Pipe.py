@@ -1,12 +1,18 @@
+''' 
+ Trabalho de processamento de imagens - UFMT - IC
+ Alunos: Jadson Matheus Lima (20181190102) Sergio Lucio Nunes (201811901024)  
+ Tema: Reconhecimento de rosto e deteccao de movimento nos 4 eixos. 
+ 
+ Instalar bibliotecas: OpenCV e MediaPipe
 
+'''
 import cv2
 import mediapipe as mp
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_face_mesh = mp.solutions.face_mesh
-testa = []
-queixo = []
+
 boca = []
 points = [10,15,200]
 center_coordinates = (320, 240)
@@ -15,6 +21,7 @@ angle = 90
 startAngle = 0
 endAngle = 360
 thickness = 3
+
 limitY1 = 200
 limitY2 = 370
 limiarY1 = round(limitY1 * 0.5)
@@ -24,6 +31,7 @@ limitX2 = 320
 limiarX1 = round(limitX1 * 0.2)
 limiarX2 = round(limitX2 * 0.2)
 
+# Funcao que salva ultimos pontos dos landmarks para verificar mudanca de posicao e movimento
 def saveHistory(lms, obj, point):
     item = [round(lms.landmark[point].x*640), round(lms.landmark[point].y*480)]
     if(len(obj)<=10):
@@ -34,8 +42,8 @@ def saveHistory(lms, obj, point):
     # print(obj)
     return obj
 
-def verificaPosicao(lms, obj, point):
-    # Detecta se rosto esta dentro da elipse
+# Funcao que verifica se rosto esta dentro da elipse
+def verificaPosicao(lms, point):
     if (lms.landmark[point[0]].y * 480 <= limitY1 + limiarY1 and lms.landmark[point[0]].y * 480 >= limitY1 - limiarY1):
         if (lms.landmark[point[2]].y * 480 >= limitY2 - limiarY2 and lms.landmark[point[2]].y * 480 <= limitY2):
             if (lms.landmark[point[0]].x * 640 <= limitX1 + limiarX1 and lms.landmark[point[0]].x * 640 >= limitX1 - limiarX1):
@@ -50,6 +58,7 @@ def verificaPosicao(lms, obj, point):
     else:
         return False
 
+#Funcao que desenha elipse com cor passada por parametro
 def drawEllipse(color):
     cv2.ellipse(
         image,
@@ -62,6 +71,7 @@ def drawEllipse(color):
         thickness
     )
 
+# Funcao que avalia o historico salvo dos pontos observados e identifica movimento 
 def verificaMovimento(obj):
     movimento = [0,0,0,0]
     for i in range(len(obj)-1, 0, -1):
@@ -126,7 +136,7 @@ with mp_face_mesh.FaceMesh(
     x, y, w, h = 10, 10, 300,60
     if results.multi_face_landmarks:
       for face_landmarks in results.multi_face_landmarks:
-        if(verificaPosicao(face_landmarks, testa, points)):
+        if(verificaPosicao(face_landmarks, points)):
             boca = saveHistory(face_landmarks, boca, points[1])
             cv2.rectangle(
                 image, 
